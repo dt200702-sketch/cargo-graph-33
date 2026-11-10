@@ -9,6 +9,7 @@ import sys
 from .config import load_config
 from .graph import TestRepository, build_graph, reverse_dependencies
 from .registry import Registry
+from .render import to_d2
 
 
 def execute(config, mode, target=None):
@@ -28,6 +29,8 @@ def execute(config, mode, target=None):
         return "\n".join(source.dependencies(root, config.exclude))
     graph, depths = build_graph(root, source.dependencies,
                                 config.max_depth, config.exclude)
+    if mode == "d2":
+        return to_d2(graph)
     if mode == "reverse":
         scope = source.graph if config.test_mode else graph
         result = reverse_dependencies(scope, target or root,
@@ -41,8 +44,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Cargo graph, variant 33")
     parser.add_argument("config", help="path to an INI configuration")
     parser.add_argument("--mode", choices=["config", "direct", "graph",
-                                                 "reverse"],
-                        default="graph")
+                                                 "reverse", "d2"],
+                        default="d2")
     parser.add_argument("--target", help="reverse target: A or name@version")
     args = parser.parse_args(argv)
     try:
