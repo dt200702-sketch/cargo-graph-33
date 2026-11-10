@@ -57,3 +57,24 @@ def build_graph(root, dependencies, max_depth, exclude=""):
 
     visit([root], 0)
     return graph, depths
+
+
+def reverse_dependencies(graph, target, max_depth, exclude=""):
+    """Traverse transitive dependents with the same recursive BFS.
+
+    Scope is the supplied graph, never the entire remote registry.
+    The target itself is excluded from the answer even in a cycle.
+    """
+    if target not in graph:
+        raise ValueError(f"Target absent from analyzed graph: {target}")
+    reverse = {node: [] for node in graph}
+    for parent, children in graph.items():
+        for child in children:
+            reverse[child].append(parent)
+    _, distances = build_graph(
+        target,
+        lambda node, skip: [n for n in reverse[node]
+                            if not skip or skip not in n.split("@", 1)[0]],
+        max_depth, exclude,
+    )
+    return {node: depth for node, depth in distances.items() if node != target}
