@@ -33,12 +33,7 @@ def matches_clause(version, clause):
     if len(tokens) > PARTS:
         raise ValueError(f"Invalid version requirement: {clause}")
     if any(token in {"*", "x", "X"} for token in tokens):
-        pivot = next(i for i, token in enumerate(tokens)
-                     if token in {"*", "x", "X"})
-        if operator or any(t not in {"*", "x", "X"}
-                           for t in tokens[pivot:]):
-            raise ValueError(f"Invalid wildcard: {clause}")
-        return version[:pivot] == tuple(map(int, tokens[:pivot]))
+        return matches_wildcard(version, tokens, operator)
     parts = tuple(map(int, tokens))
     lower = parts + (0,) * (PARTS - len(parts))
     if operator in {">", ">=", "<", "<=", "="}:
@@ -54,3 +49,12 @@ def satisfies(version, requirement):
     parsed = version_tuple(version)
     return all(matches_clause(parsed, part)
                for part in requirement.split(","))
+
+
+def matches_wildcard(version, tokens, operator):
+    """Match a numeric prefix followed only by wildcard components."""
+    wildcards = {"*", "x", "X"}
+    pivot = next(i for i, token in enumerate(tokens) if token in wildcards)
+    if operator or any(token not in wildcards for token in tokens[pivot:]):
+        raise ValueError("Invalid wildcard requirement")
+    return version[:pivot] == tuple(map(int, tokens[:pivot]))

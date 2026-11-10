@@ -31,20 +31,26 @@ def validate(config):
         raise ValueError("version: expected a stable version X.Y.Z")
     if not 0 <= config.max_depth <= MAX_DEPTH:
         raise ValueError(f"max_depth: expected 0..{MAX_DEPTH}")
+    validate_repository(config)
+    if any(ord(char) < 32 for char in config.exclude):
+        raise ValueError("exclude: control characters are forbidden")
+    return config
+
+
+
+def validate_repository(config):
+    """Validate the selected source without fetching remote resources."""
     if config.test_mode:
         if not re.fullmatch(r"[A-Z]+", config.package):
             raise ValueError("package: test names must be uppercase A-Z")
         if not Path(config.repository).is_file():
             raise ValueError("repository: test file does not exist")
-    else:
-        url = urlparse(config.repository)
-        if url.scheme not in {"http", "https"} or not url.hostname:
-            raise ValueError("repository: expected an HTTP(S) sparse index")
-        if url.query or url.fragment or url.username or url.password:
-            raise ValueError("repository: credentials/query are unsupported")
-    if any(ord(char) < 32 for char in config.exclude):
-        raise ValueError("exclude: control characters are forbidden")
-    return config
+        return
+    url = urlparse(config.repository)
+    if url.scheme not in {"http", "https"} or not url.hostname:
+        raise ValueError("repository: expected an HTTP(S) sparse index")
+    if url.query or url.fragment or url.username or url.password:
+        raise ValueError("repository: credentials/query are unsupported")
 
 
 def load_config(filename):
